@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manage Candidates</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,sans-serif;
+}
+
+body{
+    background:#f4f6f9;
+}
+
+.container{
+    width:95%;
+    max-width:1300px;
+    margin:30px auto;
+}
+
+h1{
+    text-align:center;
+    color:#0d6efd;
+    margin-bottom:30px;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:#fff;
+    box-shadow:0 5px 10px rgba(0,0,0,.1);
+}
+
+th,td{
+    border:1px solid #ddd;
+    padding:12px;
+    text-align:center;
+}
+
+th{
+    background:#0d6efd;
+    color:#fff;
+}
+
+img{
+    width:70px;
+    height:70px;
+    border-radius:50%;
+    object-fit:cover;
+}
+
+.editBtn{
+    background:#ffc107;
+    color:black;
+    border:none;
+    padding:8px 15px;
+    cursor:pointer;
+    border-radius:5px;
+}
+
+.deleteBtn{
+    background:#dc3545;
+    color:white;
+    border:none;
+    padding:8px 15px;
+    cursor:pointer;
+    border-radius:5px;
+}
+
+.modal{
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,.5);
+}
+
+.modal-content{
+    background:white;
+    width:400px;
+    margin:80px auto;
+    padding:20px;
+    border-radius:10px;
+}
+
+.modal input,
+.modal select{
+    width:100%;
+    padding:10px;
+    margin:10px 0;
+}
+
+.saveBtn{
+    width:100%;
+    padding:12px;
+    background:#198754;
+    color:white;
+    border:none;
+    cursor:pointer;
+    border-radius:5px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Manage Candidates</h1>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Photo</th>
+<th>Name</th>
+<th>Party</th>
+<th>Category</th>
+<th>Votes</th>
+<th>Actions</th>
+
+</tr>
+
+</thead>
+
+<tbody id="candidateTable">
+
+</tbody>
+
+</table>
+
+</div>
+
+<!-- Edit Modal -->
+
+<div class="modal" id="editModal">
+
+<div class="modal-content">
+
+<h2>Edit Candidate</h2>
+
+<input type="text" id="editName">
+
+<input type="text" id="editParty">
+
+<select id="editCategory">
+<option>Boy Joint Secretary</option>
+<option>Girl Joint Secretary</option>
+<option>Chairman</option>
+<option>Vice Chairman</option>
+<option>Secretary</option>
+<option>Treasurer</option>
+</select>
+
+<button class="saveBtn" id="saveBtn">
+Save Changes
+</button>
+
+</div>
+
+</div>
+
+<script type="module">
+    import { db } from "./firebase.js";
+
+import {
+    collection,
+    getDocs,
+    doc,
+    updateDoc,
+    deleteDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const table = document.getElementById("candidateTable");
+
+const modal = document.getElementById("editModal");
+
+const editName = document.getElementById("editName");
+const editParty = document.getElementById("editParty");
+const editCategory = document.getElementById("editCategory");
+
+const saveBtn = document.getElementById("saveBtn");
+
+let editId = "";
+
+// Load Candidates
+async function loadCandidates(){
+
+    table.innerHTML = "";
+
+    const snap = await getDocs(collection(db,"candidates"));
+
+    snap.forEach(candidate=>{
+
+        const data = candidate.data();
+
+        table.innerHTML += `
+        <tr>
+
+            <td>
+                <img src="${data.photo}">
+            </td>
+
+            <td>${data.name}</td>
+
+            <td>${data.party}</td>
+
+            <td>${data.category}</td>
+
+            <td>${data.votes}</td>
+
+            <td>
+
+                <button
+                    class="editBtn"
+                    onclick="editCandidate(
+                        '${candidate.id}',
+                        '${data.name}',
+                        '${data.party}',
+                        '${data.category}'
+                    )">
+                    Edit
+                </button>
+
+                <button
+                    class="deleteBtn"
+                    onclick="deleteCandidate('${candidate.id}')">
+                    Delete
+                </button>
+
+            </td>
+
+        </tr>
+        `;
+
+    });
+
+}
+
+loadCandidates();
+
+
+// Edit Candidate
+window.editCandidate = function(id,name,party,category){
+
+    editId = id;
+
+    editName.value = name;
+    editParty.value = party;
+    editCategory.value = category;
+
+    modal.style.display = "block";
+
+};
+
+
+// Save Changes
+saveBtn.onclick = async()=>{
+
+    await updateDoc(doc(db,"candidates",editId),{
+
+        name: editName.value.trim(),
+        party: editParty.value.trim(),
+        category: editCategory.value
+
+    });
+
+    alert("Candidate Updated Successfully");
+
+    modal.style.display = "none";
+
+    loadCandidates();
+
+};
+
+
+// Delete Candidate
+window.deleteCandidate = async(id)=>{
+
+    if(!confirm("Delete this candidate?"))
+        return;
+
+    await deleteDoc(doc(db,"candidates",id));
+
+    alert("Candidate Deleted Successfully");
+
+    loadCandidates();
+
+};
+
+
+// Close modal when clicking outside
+window.onclick = (e)=>{
+
+    if(e.target == modal){
+
+        modal.style.display = "none";
+
+    }
+
+};
+</script>
+
+</body>
+</html>

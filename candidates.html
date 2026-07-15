@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Add Candidate</title>
+
+<link rel="stylesheet" href="admin.css">
+
+<style>
+.container{
+    width:500px;
+    margin:40px auto;
+    background:#fff;
+    padding:25px;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(0,0,0,.2);
+}
+
+input,
+select{
+    width:100%;
+    padding:12px;
+    margin:10px 0;
+    border:1px solid #ccc;
+    border-radius:6px;
+    font-size:16px;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    background:#0d6efd;
+    color:white;
+    border:none;
+    cursor:pointer;
+    font-size:16px;
+}
+
+img{
+    width:120px;
+    margin-top:15px;
+    border-radius:10px;
+}
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+<h2>Add Candidate</h2>
+
+<input type="text" id="name" placeholder="Candidate Name">
+
+<input type="text" id="party" placeholder="Party Name">
+<select id="category">
+    <option value="">-- Select Category --</option>
+    <option value="Boy Joint Secretary">Boy Joint Secretary</option>
+    <option value="Girl Joint Secretary">Girl Joint Secretary</option>
+    <option value="Chairman">Chairman</option>
+    <option value="Vice Chairman">Vice Chairman</option>
+    <option value="Secretary">Secretary</option>
+    <option value="Treasurer">Treasurer</option>
+</select>
+
+<input type="file" id="photo">
+
+<button id="addBtn">Add Candidate</button>
+
+<br><br>
+
+<center>
+
+<img id="preview">
+
+</center>
+
+</div>
+<script type="module">
+
+import { db } from "./firebase.js";
+
+import {
+    collection,
+    addDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const nameInput = document.getElementById("name");
+const partyInput = document.getElementById("party");
+const categoryInput = document.getElementById("category");
+const photoInput = document.getElementById("photo");
+const preview = document.getElementById("preview");
+const addBtn = document.getElementById("addBtn");
+
+photoInput.addEventListener("change", () => {
+
+    if(photoInput.files.length > 0){
+        preview.src = URL.createObjectURL(photoInput.files[0]);
+    }
+
+});
+
+addBtn.addEventListener("click", async () => {
+
+    const name = nameInput.value.trim();
+const party = partyInput.value.trim();
+const category = categoryInput.value;
+const file = photoInput.files[0];
+
+   if(name === "" || party === "" || category === "" || !file){
+        alert("Please fill all fields.");
+        return;
+    }
+
+    try{
+
+        // Save candidate in Firestore
+       await addDoc(collection(db,"candidates"),{
+
+    name: name,
+    party: party,
+    category: category,
+    photo: "images/" + file.name,
+    votes: 0
+
+});
+
+        alert("Candidate Added Successfully");
+
+        nameInput.value = "";
+        partyInput.value = "";
+        categoryInput.value = "";
+        photoInput.value = "";
+        preview.src = "";
+
+    }
+    catch(err){
+
+        console.error(err);
+        alert(err.message);
+
+    }
+
+});
+
+</script>
+</body>
+</html>

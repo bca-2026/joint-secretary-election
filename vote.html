@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Cast Your Vote</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,sans-serif;
+}
+
+body{
+background:#f4f6f9;
+}
+
+.container{
+width:95%;
+max-width:1300px;
+margin:30px auto;
+}
+
+h1{
+text-align:center;
+margin-bottom:40px;
+color:#0d6efd;
+}
+
+.category{
+margin:35px 0 20px;
+padding:10px;
+background:#0d6efd;
+color:white;
+border-radius:8px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+gap:25px;
+margin-bottom:40px;
+}
+
+.card{
+
+background:white;
+padding:20px;
+border-radius:15px;
+text-align:center;
+box-shadow:0 5px 15px rgba(0,0,0,.15);
+
+}
+
+.card img{
+
+width:150px;
+height:150px;
+border-radius:50%;
+object-fit:cover;
+border:4px solid #0d6efd;
+
+}
+
+.card h2{
+
+margin:15px 0 5px;
+
+}
+
+.card p{
+
+color:#666;
+
+}
+
+.card input{
+
+transform:scale(1.5);
+margin-top:20px;
+
+}
+
+#voteBtn{
+
+display:block;
+margin:40px auto;
+padding:15px 60px;
+font-size:20px;
+background:green;
+color:white;
+border:none;
+border-radius:8px;
+cursor:pointer;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>CAST YOUR VOTE</h1>
+
+<h2 class="category">Boy Joint Secretary</h2>
+
+<div id="boyCandidates" class="grid"></div>
+
+<h2 class="category">Girl Joint Secretary</h2>
+
+<div id="girlCandidates" class="grid"></div>
+
+<button id="voteBtn">Submit Vote</button>
+
+</div>
+
+<script type="module">
+
+import { db } from "./firebase.js";
+
+import {
+collection,
+getDocs,
+doc,
+setDoc,
+updateDoc,
+increment,
+getDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+let boyCandidate="";
+let girlCandidate="";
+
+const voterId=localStorage.getItem("voterId");
+
+if(!voterId){
+
+alert("Login First");
+
+location.href="index.html";
+
+}
+const settingsSnap = await getDoc(doc(db,"settings","election"));
+
+const settings = settingsSnap.data();
+
+if(!settings.electionOpen){
+
+    alert("Election is currently closed.");
+
+    location.href="index.html";
+
+}
+
+async function loadCandidates(){
+    const settingsSnap = await getDoc(doc(db,"settings","election"));
+
+const settings = settingsSnap.data();
+
+const snap=await getDocs(collection(db,"candidates"));
+
+snap.forEach((candidate)=>{
+
+const data=candidate.data();
+if(!settings[data.category]){
+    return;
+}
+
+const html=`
+
+<div class="card">
+
+<img src="${data.photo}">
+
+<h2>${data.name}</h2>
+
+<p>${data.party}</p>
+
+<input type="radio"
+name="${data.category}"
+value="${candidate.id}">
+
+</div>
+
+`;
+
+if(data.category=="Boy Joint Secretary"){
+
+document.getElementById("boyCandidates").innerHTML+=html;
+
+}
+
+if(data.category=="Girl Joint Secretary"){
+
+document.getElementById("girlCandidates").innerHTML+=html;
+
+}
+
+});
+
+document.querySelectorAll("input[type=radio]").forEach(r=>{
+
+r.onchange=()=>{
+
+if(r.name=="Boy Joint Secretary"){
+
+boyCandidate=r.value;
+
+}
+
+if(r.name=="Girl Joint Secretary"){
+
+girlCandidate=r.value;
+
+}
+
+};
+
+});
+
+}
+
+loadCandidates();
+
+document.getElementById("voteBtn").onclick=async()=>{
+
+if(boyCandidate==""){
+
+alert("Select Boy Joint Secretary");
+
+return;
+
+}
+
+if(girlCandidate==""){
+
+alert("Select Girl Joint Secretary");
+
+return;
+
+}
+
+// Save Vote
+
+await setDoc(doc(db,"votes",voterId),{
+
+voterId:voterId,
+
+boyJointSecretary:boyCandidate,
+
+girlJointSecretary:girlCandidate,
+
+date:new Date()
+
+});
+
+// Increase Votes
+
+await updateDoc(doc(db,"candidates",boyCandidate),{
+
+votes:increment(1)
+
+});
+
+await updateDoc(doc(db,"candidates",girlCandidate),{
+
+votes:increment(1)
+
+});
+
+// Update Voter
+
+const voters=await getDocs(collection(db,"voters"));
+
+voters.forEach(async(v)=>{
+
+if(v.data().voterId==voterId){
+
+await updateDoc(doc(db,"voters",v.id),{
+
+hasVoted:true
+
+});
+
+}
+
+});
+
+alert("Vote Submitted Successfully");
+
+localStorage.clear();
+
+location.href="index.html";
+
+};
+
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Election Settings</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,sans-serif;
+}
+
+body{
+background:#f4f6f9;
+display:flex;
+justify-content:center;
+padding:40px;
+}
+
+.container{
+
+width:650px;
+background:white;
+padding:30px;
+border-radius:15px;
+box-shadow:0 5px 15px rgba(0,0,0,.15);
+
+}
+
+h2{
+
+text-align:center;
+color:#0d6efd;
+margin-bottom:25px;
+
+}
+
+.row{
+
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:18px 0;
+border-bottom:1px solid #ddd;
+
+}
+
+.row:last-child{
+border-bottom:none;
+}
+
+.row label:first-child{
+
+font-size:18px;
+font-weight:bold;
+
+}
+
+/* Toggle */
+
+.toggle{
+
+position:relative;
+display:inline-block;
+width:90px;
+height:42px;
+
+}
+
+.toggle input{
+
+display:none;
+
+}
+
+.slider{
+
+position:absolute;
+cursor:pointer;
+top:0;
+left:0;
+right:0;
+bottom:0;
+background:#e53935;
+border-radius:50px;
+transition:.4s;
+box-shadow:0 2px 10px rgba(0,0,0,.2);
+
+}
+
+.slider:before{
+
+content:"";
+position:absolute;
+width:34px;
+height:34px;
+left:4px;
+top:4px;
+background:white;
+border-radius:50%;
+transition:.4s;
+box-shadow:0 2px 8px rgba(0,0,0,.3);
+
+}
+
+.slider:after{
+
+content:"OFF";
+position:absolute;
+right:10px;
+top:50%;
+transform:translateY(-50%);
+font-size:13px;
+font-weight:bold;
+color:white;
+transition:.4s;
+
+}
+
+.toggle input:checked + .slider{
+
+background:#22c55e;
+
+}
+
+.toggle input:checked + .slider:before{
+
+transform:translateX(48px);
+
+}
+
+.toggle input:checked + .slider:after{
+
+content:"ON";
+left:15px;
+right:auto;
+
+}
+
+#saveBtn{
+
+width:100%;
+padding:15px;
+margin-top:30px;
+font-size:18px;
+background:#0d6efd;
+color:white;
+border:none;
+border-radius:8px;
+cursor:pointer;
+
+}
+
+#saveBtn:hover{
+
+background:#0b5ed7;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Election Settings</h2>
+
+<div class="row">
+
+<label>Election Open</label>
+
+<label class="toggle">
+
+<input type="checkbox" id="electionOpen">
+
+<span class="slider"></span>
+
+</label>
+
+</div>
+
+<div class="row">
+
+<label>Boy Joint Secretary</label>
+
+<label class="toggle">
+
+<input type="checkbox" id="boy">
+
+<span class="slider"></span>
+
+</label>
+
+</div>
+
+<div class="row">
+
+<label>Girl Joint Secretary</label>
+
+<label class="toggle">
+
+<input type="checkbox" id="girl">
+
+<span class="slider"></span>
+
+</label>
+
+</div>
+
+<div class="row">
+
+<label>Chairman</label>
+
+<label class="toggle">
+
+<input type="checkbox" id="chairman">
+
+<span class="slider"></span>
+
+</label>
+
+</div>
+
+<div class="row">
+
+<label>Vice Chairman</label>
+
+<label class="toggle">
+
+<input type="checkbox" id="vice">
+
+<span class="slider"></span>
+
+</label>
+
+</div>
+
+<div class="row">
+
+<label>Secretary</label>
+
+<label class="toggle">
+
+<input type="checkbox" id="secretary">
+
+<span class="slider"></span>
+
+</label>
+
+</div>
+
+<div class="row">
+
+<label>Treasurer</label>
+
+<label class="toggle">
+
+<input type="checkbox" id="treasurer">
+
+<span class="slider"></span>
+
+</label>
+
+</div>
+
+<button id="saveBtn">Save Settings</button>
+
+</div>
+
+<script type="module">
+
+import { db } from "./firebase.js";
+
+import {
+doc,
+setDoc,
+getDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const ref = doc(db,"settings","election");
+
+async function loadSettings(){
+
+const snap = await getDoc(ref);
+
+if(snap.exists()){
+
+const d = snap.data();
+
+document.getElementById("electionOpen").checked = d.electionOpen || false;
+document.getElementById("boy").checked = d["Boy Joint Secretary"] || false;
+document.getElementById("girl").checked = d["Girl Joint Secretary"] || false;
+document.getElementById("chairman").checked = d["Chairman"] || false;
+document.getElementById("vice").checked = d["Vice Chairman"] || false;
+document.getElementById("secretary").checked = d["Secretary"] || false;
+document.getElementById("treasurer").checked = d["Treasurer"] || false;
+
+}
+
+}
+
+loadSettings();
+
+document.getElementById("saveBtn").onclick = async()=>{
+
+await setDoc(ref,{
+
+electionOpen:document.getElementById("electionOpen").checked,
+
+"Boy Joint Secretary":document.getElementById("boy").checked,
+
+"Girl Joint Secretary":document.getElementById("girl").checked,
+
+"Chairman":document.getElementById("chairman").checked,
+
+"Vice Chairman":document.getElementById("vice").checked,
+
+"Secretary":document.getElementById("secretary").checked,
+
+"Treasurer":document.getElementById("treasurer").checked
+
+});
+
+alert("Election Settings Saved Successfully.");
+
+};
+
+</script>
+
+</body>
+</html>

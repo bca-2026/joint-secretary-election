@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Election Results</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,sans-serif;
+}
+
+body{
+background:#f4f6f9;
+padding:30px;
+}
+
+h1{
+text-align:center;
+margin-bottom:40px;
+color:#0d6efd;
+}
+
+.category{
+margin-top:40px;
+background:#0d6efd;
+color:white;
+padding:15px;
+border-radius:8px;
+}
+
+.grid{
+
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+gap:20px;
+margin-top:20px;
+
+}
+
+.card{
+
+background:white;
+padding:20px;
+border-radius:10px;
+box-shadow:0 5px 10px rgba(0,0,0,.15);
+text-align:center;
+
+}
+
+.card img{
+
+width:140px;
+height:140px;
+border-radius:50%;
+object-fit:cover;
+
+}
+
+.card h2{
+
+margin-top:15px;
+
+}
+
+.vote{
+
+font-size:22px;
+font-weight:bold;
+color:green;
+margin-top:15px;
+
+}
+
+.winner{
+
+border:4px solid gold;
+
+}
+
+.badge{
+
+background:gold;
+padding:8px 15px;
+display:inline-block;
+margin-top:10px;
+border-radius:20px;
+font-weight:bold;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>Election Results</h1>
+
+<div id="results"></div>
+
+<script type="module">
+
+import { db } from "./firebase.js";
+
+import {
+
+collection,
+getDocs
+
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+async function loadResults(){
+
+const snap=await getDocs(collection(db,"candidates"));
+
+const categories={};
+
+snap.forEach(doc=>{
+
+const data=doc.data();
+
+if(!categories[data.category]){
+
+categories[data.category]=[];
+
+}
+
+categories[data.category].push(data);
+
+});
+
+const results=document.getElementById("results");
+
+results.innerHTML="";
+
+for(const category in categories){
+
+const list=categories[category];
+
+list.sort((a,b)=>b.votes-a.votes);
+
+let html=`
+
+<h2 class="category">${category}</h2>
+
+<div class="grid">
+
+`;
+
+list.forEach((candidate,index)=>{
+
+html+=`
+
+<div class="card ${index==0?'winner':''}">
+
+<img src="${candidate.photo}">
+
+<h2>${candidate.name}</h2>
+
+<h3>${candidate.party}</h3>
+
+<div class="vote">
+
+Votes : ${candidate.votes}
+
+</div>
+
+${index==0?'<div class="badge">🏆 Winner</div>':''}
+
+</div>
+
+`;
+
+});
+
+html+="</div>";
+
+results.innerHTML+=html;
+
+}
+
+}
+
+loadResults();
+
+</script>
+
+</body>
+</html>

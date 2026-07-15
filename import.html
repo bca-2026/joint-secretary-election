@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Import Voters</title>
+
+<link rel="stylesheet" href="admin.css">
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+
+</head>
+
+<body>
+
+<div class="sidebar">
+
+<h2>Election</h2>
+
+<ul>
+
+<li><a href="dashboard.html">Dashboard</a></li>
+
+<li><a href="voters.html">Voters</a></li>
+
+<li><a href="import-voters.html">Import Voters</a></li>
+
+<li><a href="candidates.html">Candidates</a></li>
+
+<li><a href="results.html">Results</a></li>
+
+</ul>
+
+</div>
+
+<div class="main">
+
+<h1>Import Voters</h1>
+
+<br>
+
+<input
+type="file"
+id="excelFile"
+accept=".xlsx,.xls,.csv">
+
+<br><br>
+
+<button id="previewBtn">
+
+Preview Excel
+
+</button>
+
+<button id="importBtn">
+
+Import to Firebase
+
+</button>
+
+<br><br>
+
+<table
+border="1"
+width="100%"
+cellpadding="10"
+id="previewTable">
+
+<thead>
+
+<tr>
+
+<th>Voter ID</th>
+
+<th>Name</th>
+
+<th>Department</th>
+
+<th>Year</th>
+
+<th>Voter Key</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+</tbody>
+
+</table>
+
+<br>
+
+<h3 id="status"></h3>
+
+</div>
+<script type="module">
+import { db } from "./firebase.js";
+
+import {
+    collection,
+    addDoc,
+    query,
+    where,
+    getDocs
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+let excelData = [];
+
+// =========================
+// Preview Excel
+// =========================
+document.getElementById("previewBtn").addEventListener("click", () => {
+
+    const file = document.getElementById("excelFile").files[0];
+
+    if (!file) {
+        alert("Please select an Excel file.");
+        return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+
+        const data = new Uint8Array(e.target.result);
+
+        const workbook = XLSX.read(data, { type: "array" });
+
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+        excelData = XLSX.utils.sheet_to_json(sheet);
+
+        console.log(excelData);
+
+        showPreview();
+    };
+
+    reader.readAsArrayBuffer(file);
+
+});
+
+
+// =========================
+// Show Preview
+// =========================
+function showPreview() {
+
+    const tbody = document.querySelector("#previewTable tbody");
+
+    tbody.innerHTML = "";
+
+    excelData.forEach(row => {
+
+        const voterId =
+            row["Voter ID"] ||
+            row["VoterID"] ||
+            row["ID"] ||
+            "";
+
+        tbody.innerHTML += `
+        <tr>
+            <td>${voterId}</td>
+            <td>${row["Name"] || ""}</td>
+            <td>${row["Department"] || ""}</td>
+            <td>${row["Year"] || ""}</td>
+            <td>${row["Voter Key"] || ""}</td>
+        </tr>
+        `;
+    });
+
+}
+
+
+// =========================
+// Import to Firebase
+// =========================
+document.getElementById("importBtn").addEventListener("click", async () => {
+
+    if (excelData.length === 0) {
+        alert("Preview Excel First");
+        return;
+    }
+
+    let imported = 0;
+    let duplicate = 0;
+
+    try {
+
+        for (const row of excelData) {
+
+            const voterId =
+                row["Voter ID"] ||
+                row["VoterID"] ||
+                row["ID"];
+
+            if (!voterId) {
+                console.log("Skipping row", row);
+                continue;
+            }
+
+            const q = query(
+                collection(db, "voters"),
+                where("voterId", "==", voterId)
+            );
+
+            const snap = await getDocs(q);
+
+            if (!snap.empty) {
+                duplicate++;
+                continue;
+            }
+
+            await addDoc(collection(db, "voters"), {
+
+                voterId: voterId,
+                name: row["Name"] || "",
+                department: row["Department"] || "",
+                year: row["Year"] || "",
+                voterKey: String(row["Voter Key"] || ""),
+                hasVoted: false,
+                isActive: true
+
+            });
+
+            imported++;
+        }
+
+        document.getElementById("status").innerHTML =
+            `Imported : ${imported}<br>Duplicate : ${duplicate}`;
+
+        alert("Import Completed Successfully");
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(error.code + "\n" + error.message);
+
+    }
+
+});
+</script>
+
+</body>
+
+</html>
